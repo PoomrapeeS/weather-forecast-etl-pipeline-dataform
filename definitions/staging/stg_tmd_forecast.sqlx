@@ -1,0 +1,24 @@
+config {
+  type: "incremental",
+  schema: "staging",
+  description: "TMD hourly forecast, one row per location × forecast hour × extract file",
+  uniqueKey: ["source_file", "tambon", "amphoe", "forecast_time"],
+  assertions: { nonNull: ["amphoe", "forecast_time", "extract_date"] }
+}
+
+SELECT
+  t._FILE_NAME            AS source_file,
+  wf.location.province    AS province,
+  wf.location.amphoe      AS amphoe,
+  wf.location.tambon      AS tambon,
+  wf.location.lat         AS lat,
+  wf.location.lon         AS lon,
+  f.time                  AS forecast_time,
+  f.data.tc               AS temp_c,
+  f.data.rh               AS humidity_pct,
+  f.data.cond             AS condition_code
+FROM ${ref("tmd_forecast_ext")} AS t,
+  UNNEST(t.WeatherForecasts) AS wf,
+  UNNEST(wf.forecasts) AS f
+${when(incremental(),
+  `WHERE t.dt >= (SELECT MAX(extract_date) FROM ${self()})`)}
