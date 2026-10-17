@@ -1,0 +1,35 @@
+config {
+  type: "table",
+  schema: "refined",
+  assertions: { uniqueKey: ["province", "amphoe", "tambon", "forecast_datetime"] }
+}
+
+SELECT
+  province,
+  amphoe,
+  tambon,
+  DATETIME(forecast_time, 'Asia/Bangkok') AS forecast_datetime,
+  DATE(forecast_time, 'Asia/Bangkok')     AS forecast_date,
+  temp_c,
+  humidity_pct,
+  condition_code,
+  CASE condition_code
+    WHEN 1  THEN 'ท้องฟ้าแจ่มใส'
+    WHEN 2  THEN 'มีเมฆบางส่วน'
+    WHEN 3  THEN 'เมฆเป็นส่วนมาก'
+    WHEN 4  THEN 'มีเมฆมาก'
+    WHEN 5  THEN 'ฝนตกเล็กน้อย'
+    WHEN 6  THEN 'ฝนปานกลาง'
+    WHEN 7  THEN 'ฝนตกหนัก'
+    WHEN 8  THEN 'ฝนฟ้าคะนอง'
+    WHEN 9  THEN 'อากาศหนาวจัด'
+    WHEN 10 THEN 'อากาศหนาว'
+    WHEN 11 THEN 'อากาศเย็น'
+    WHEN 12 THEN 'อากาศร้อนจัด'
+    ELSE 'ไม่ทราบ'
+  END AS condition_th,
+FROM ${ref("stg_tmd_forecast")}
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY province, amphoe, tambon, forecast_time
+  ORDER BY forecast_time DESC
+) = 1

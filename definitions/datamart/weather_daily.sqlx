@@ -1,0 +1,16 @@
+config { 
+    type: "table", 
+    schema: "datamart" 
+}
+
+SELECT
+  province,
+  amphoe,
+  forecast_date,
+  MIN(temp_c)                                       AS temp_min_c,
+  MAX(temp_c)                                       AS temp_max_c,
+  ROUND(AVG(humidity_pct), 1)                       AS humidity_avg_pct,
+  APPROX_TOP_COUNT(condition_th, 1)[OFFSET(0)].value AS main_condition
+FROM ${ref("refined_tmd_forecast")}
+GROUP BY province, amphoe, forecast_date
+ORDER BY forecast_date, province, amphoe
